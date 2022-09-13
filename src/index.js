@@ -1,94 +1,125 @@
+// Імпорти та константи
+
 import './css/styles.css';
-import { fetchCountries } from './js/fetchCountries.js';
+import { fetchPixabay } from './js/fetchPixabay.js';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
-import templateFunction from './template.hbs';
-const axios = require('axios').default;
+// import articlecTpl from "./templates/articles.hbs";
 
-var debounce = require('lodash.debounce');
+// Пошук елементів
 
-const DEBOUNCE_DELAY = 300;
+const searchForm = document.querySelector('.search-form');
+const gallery = document.querySelector('.gallery');
+const loadMoreBtn = document.querySelector('.load-more');
 
-const countryList = document.querySelector('.country-list');
-const countryInfo = document.querySelector('.country-info');
-const inputNameCountry = document.querySelector('#search-box');
+// Слухачі подій
 
-inputNameCountry.addEventListener('input', debounce(onSearch, DEBOUNCE_DELAY));
+searchForm.addEventListener('submit', onSearch);
+loadMoreBtn.addEventListener('click', onLoadMore);
+
+// Змінні
+
+let searchQueryInput = '';
+let page = 1;
+let totalPages = null;
 
 // Пошуковий запит
 
 function onSearch (e) {
-    const entry = inputNameCountry.value.trim();
-    cleanMarkup();   
-    if (entry !== '') {
-        fetchCountries(entry)
-        .then(country => {      
-            if (country.length > 10) {
-                Notify.info('Too many matches found. Please enter a more specific name.');
-            } else if (country.length === 0) {
-                Notify.failure('Oops, there is no country with that name');
-            } else if (country.length >= 2 && country.length <= 10) {
-                renderCountryList(country);
-                Notify.warning('Select a country to learn more')
-            } else if (country.length === 1) {
-                renderCountryCard(country);
-                Notify.success('Detailed information is displayed')
-            }
-        })
-        .catch(onFetchError)
-        .finally(() => console.log('Make a second request'));
+    e.preventDefault ();
+    reserPage ();
+    cleanerGallery ();
+    searchQueryInput = e.currentTarget.elements.searchQuery.value.trim();
+    if (searchQueryInput === '') {
+        loadMoreBtn.classList.add('is-hidden');
+        return Notify.info('Please enter a more specific name.')
     }
+    fetchPixabay(searchQueryInput, page)
+    .then(r => {
+        // console.log(r.data)
+        totalPages = Math.ceil(r.data.totalHits / 40);
+        if (r.data.totalHits === 0) {
+            loadMoreBtn.classList.add('is-hidden');
+            return Notify.failure('Sorry, there are no images matching your search query. Please try again.');
+        }
+        if (page === 1) {
+            Notify.success(`Hooray! We found ${r.data.totalHits} images.`);
+        }
+        incrementPage ();
+        loadMoreBtn.classList.remove('is-hidden');
+        return r.data.hits;
+    })
+    .then(createGallery)
+    .catch(onFetchError)
+    .finally(() => console.log('Make a second request'));
 }
 
 // Створення та рендер розмітки
 
-function renderCountryList(country) {
-    const markup = country.map(({flags, altSpellings}) => {
+function createGallery(hits) {
+    const markup = hits.map(({largeImageURL, webformatURL, tags, likes, views, comments, downloads}) => {
         return `
-        <li class="card-svg" style = "display: flex">
-            <img src="${flags.svg}" alt="${altSpellings[1]}" style = "margin: 1px 0px 1px 15px; width: 3%;">
-            <p class="card-title" style = "margin: 0px 0px 0px 10px">${altSpellings[1]}</p>
-        </li>`
+        <a href="${largeImageURL}">
+            <div class="photo-card">
+                <img src="${webformatURL}" alt="${tags}" loading="lazy" />
+                <div class="info">
+                    <p class="info-item">
+                    <b>Likes</b><br>${likes}
+                    </p>
+                    <p class="info-item">
+                    <b>Views</b><br>${views}
+                    </p>
+                    <p class="info-item">
+                    <b>Comments</b><br>${comments}
+                    </p>
+                    <p class="info-item">
+                    <b>Downloads</b><br>${downloads}
+                    </p>
+                </div>
+            </div>
+        </a>`
     }).join('');
-    console.log(country);
-    countryList.innerHTML = markup;
+    gallery.insertAdjacentHTML('beforeend', markup);
+}
+  
+// Завантажити ще (ф-я)
+
+function onLoadMore () {
+    if (page > totalPages) {
+        loadMoreBtn.classList.add('is-hidden');
+        Notify.info("We're sorry, but you've reached the end of search results.");
+        
+    }
+
+    fetchPixabay(searchQueryInput, page)
+    .then(r => {
+        incrementPage();
+        return r.data.hits;
+    })
+    .then(createGallery)
 }
 
-function renderCountryCard(country) {
-    const markup = country.map(({flags, altSpellings, capital, population, languages}) => {
-        return `
-        <div class="card" style = "border: solid; width: 300px">
-            <div class="card-svg" style = "display: flex">
-                <img src="${flags.svg}" alt="${altSpellings[1]}" style = "margin-left: 15px; width: 10%">
-                <h2 class="card-title" style = "margin-left: 10px">${altSpellings[1]}</h2>
-            </div>
-            <div class="card-description" style = "margin-left: 15px">
-                <p class="card-text">Capital: ${capital}</p>
-                <p class="card-text">Population: ${population}</p>
-                <p class="card-text">Languages: ${Object.values(languages)}</p>
-            </div>
-        </div>`
-    }).join('');
-    console.log(country);
-    countryInfo.innerHTML = markup;
+// Допоміжні ф-ї
+
+function cleanerGallery () {
+    gallery.innerHTML = '';
 }
 
-// Функція очистки розмітки
+function incrementPage () {
+    page += 1;
+}
 
-function cleanMarkup() {
-    countryList.innerHTML = '';
-    countryInfo.innerHTML = '';
+function reserPage () {
+    page = 1;
+    totalPages = null;
 }
 
 function onFetchError (error) {
-    Notify.failure(
-        `Oops, there is no country with that name`
-    );
+    Notify.failure('Oops, error!!!');
 }
 
-
-
+new SimpleLightbox('.gallery a', {});
 
 
 
