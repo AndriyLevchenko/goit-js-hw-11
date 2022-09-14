@@ -6,11 +6,5 @@ const OPTIONS = `image_type=photo&orientation=horizontal&safesearch=true&lang=en
 export function fetchPixabay (searchQueryInput, page) {
   const url = `https://pixabay.com/api/?key=${API_KEY}&q=${searchQueryInput}&${OPTIONS}&page=${page}`;
   return axios.get(url)
-  
-  // return fetch(url)
-  // .then(r => r.json()
-     
-    
-  // )
 }
 

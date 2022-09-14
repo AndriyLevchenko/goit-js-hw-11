@@ -10,7 +10,7 @@ import "simplelightbox/dist/simple-lightbox.min.css";
 // Пошук елементів
 
 const searchForm = document.querySelector('.search-form');
-const gallery = document.querySelector('.gallery');
+const toGallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
 
 // Слухачі подій
@@ -37,7 +37,7 @@ function onSearch (e) {
     }
     fetchPixabay(searchQueryInput, page)
     .then(r => {
-        // console.log(r.data)
+        console.log(r.data)
         totalPages = Math.ceil(r.data.totalHits / 40);
         if (r.data.totalHits === 0) {
             loadMoreBtn.classList.add('is-hidden');
@@ -46,8 +46,12 @@ function onSearch (e) {
         if (page === 1) {
             Notify.success(`Hooray! We found ${r.data.totalHits} images.`);
         }
-        incrementPage ();
         loadMoreBtn.classList.remove('is-hidden');
+        if (totalPages <= 1) {
+            loadMoreBtn.classList.add('is-hidden');
+        }
+        incrementPage ();
+        
         return r.data.hits;
     })
     .then(createGallery)
@@ -58,8 +62,8 @@ function onSearch (e) {
 // Створення та рендер розмітки
 
 function createGallery(hits) {
-    const markup = hits.map(({largeImageURL, webformatURL, tags, likes, views, comments, downloads}) => {
-        return `
+    const markup = 
+        `
         <a href="${largeImageURL}">
             <div class="photo-card">
                 <img src="${webformatURL}" alt="${tags}" loading="lazy" />
@@ -79,8 +83,8 @@ function createGallery(hits) {
                 </div>
             </div>
         </a>`
-    }).join('');
-    gallery.insertAdjacentHTML('beforeend', markup);
+  ;
+    toGallery.insertAdjacentHTML('beforeend', markup);
 }
   
 // Завантажити ще (ф-я)
@@ -103,7 +107,7 @@ function onLoadMore () {
 // Допоміжні ф-ї
 
 function cleanerGallery () {
-    gallery.innerHTML = '';
+    toGallery.innerHTML = '';
 }
 
 function incrementPage () {
@@ -119,7 +123,10 @@ function onFetchError (error) {
     Notify.failure('Oops, error!!!');
 }
 
-new SimpleLightbox('.gallery a', {});
+// Бібліотека SimpleLightbox
+
+new SimpleLightbox('.gallery a');
+
 
 
 
