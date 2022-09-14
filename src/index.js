@@ -62,8 +62,8 @@ function onSearch (e) {
 // Створення та рендер розмітки
 
 function createGallery(hits) {
-    const markup = 
-        `
+    const markup = hits.map(({largeImageURL, webformatURL, tags, likes, views, comments, downloads}) => {
+        return `
         <a href="${largeImageURL}">
             <div class="photo-card">
                 <img src="${webformatURL}" alt="${tags}" loading="lazy" />
@@ -83,7 +83,7 @@ function createGallery(hits) {
                 </div>
             </div>
         </a>`
-  ;
+    }).join('');
     toGallery.insertAdjacentHTML('beforeend', markup);
 }
   
