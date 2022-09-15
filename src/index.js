@@ -32,7 +32,7 @@ function onSearch (e) {
     cleanerGallery ();
     searchQueryInput = e.currentTarget.elements.searchQuery.value.trim();
     if (searchQueryInput === '') {
-        loadMoreBtn.classList.add('is-hidden');
+        // loadMoreBtn.classList.add('is-hidden');
         return Notify.info('Please enter a more specific name.')
     }
     fetchPixabay(searchQueryInput, page)
@@ -54,7 +54,7 @@ function onSearch (e) {
         
         return r.data.hits;
     })
-    .then(createGallery)
+    .then(getResponse)
     .catch(onFetchError)
     .finally(() => console.log('Make a second request'));
 }
@@ -101,7 +101,7 @@ function onLoadMore () {
         incrementPage();
         return r.data.hits;
     })
-    .then(createGallery)
+    .then(getResponse)
 }
 
 // Допоміжні ф-ї
@@ -125,9 +125,12 @@ function onFetchError (error) {
 
 // Бібліотека SimpleLightbox
 
-new SimpleLightbox('.gallery a');
+const gallery = new SimpleLightbox('.gallery a', {});
 
-
+function getResponse(r) {
+    createGallery(r);
+  gallery.refresh();
+}
 
 
 
