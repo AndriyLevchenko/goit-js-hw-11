@@ -32,7 +32,7 @@ function onSearch (e) {
     cleanerGallery ();
     searchQueryInput = e.currentTarget.elements.searchQuery.value.trim();
     if (searchQueryInput === '') {
-        // loadMoreBtn.classList.add('is-hidden');
+        loadMoreBtn.classList.add('is-hidden');
         return Notify.info('Please enter a more specific name.')
     }
     fetchPixabay(searchQueryInput, page)
@@ -93,7 +93,6 @@ function onLoadMore () {
     if (page > totalPages) {
         loadMoreBtn.classList.add('is-hidden');
         Notify.info("We're sorry, but you've reached the end of search results.");
-        
     }
 
     fetchPixabay(searchQueryInput, page)
@@ -127,8 +126,8 @@ function onFetchError (error) {
 
 const gallery = new SimpleLightbox('.gallery a', {});
 
-function getResponse(r) {
-    createGallery(r);
+function getResponse(hits) {
+    createGallery(hits);
   gallery.refresh();
 }
 
