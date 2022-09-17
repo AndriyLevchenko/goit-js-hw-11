@@ -26,37 +26,40 @@ let totalPages = null;
 
 // Пошуковий запит
 
+loadMoreBtn.classList.add('is-hidden');
+
 function onSearch (e) {
     e.preventDefault ();
     reserPage ();
     cleanerGallery ();
     searchQueryInput = e.currentTarget.elements.searchQuery.value.trim();
     if (searchQueryInput === '') {
-        loadMoreBtn.classList.add('is-hidden');
         return Notify.info('Please enter a more specific name.')
     }
-    fetchPixabay(searchQueryInput, page)
-    .then(r => {
-        console.log(r.data)
-        totalPages = Math.ceil(r.data.totalHits / 40);
-        if (r.data.totalHits === 0) {
-            loadMoreBtn.classList.add('is-hidden');
-            return Notify.failure('Sorry, there are no images matching your search query. Please try again.');
-        }
-        if (page === 1) {
-            Notify.success(`Hooray! We found ${r.data.totalHits} images.`);
-        }
-        loadMoreBtn.classList.remove('is-hidden');
-        if (totalPages <= 1) {
-            loadMoreBtn.classList.add('is-hidden');
-        }
-        incrementPage ();
-        
-        return r.data.hits;
-    })
-    .then(getResponse)
-    .catch(onFetchError)
-    .finally(() => console.log('Make a second request'));
+    if (searchQueryInput !== '') {
+        fetchPixabay(searchQueryInput, page)
+        .then(r => {
+            console.log(r.data)
+            totalPages = Math.ceil(r.data.totalHits / 40);  
+            if (r.data.totalHits === 0) {
+                return Notify.failure('Sorry, there are no images matching your search query. Please try again.');
+            } else {
+                Notify.success(`Hooray! We found ${r.data.totalHits} images.`);
+            }
+            incrementPage ();
+            return r.data.hits;
+        })
+        .then(r => {
+            getResponse(r);
+            if (totalPages <= 1) {
+                loadMoreBtn.classList.add('is-hidden');
+            } else {
+                loadMoreBtn.classList.remove('is-hidden');
+            }
+        })
+        .catch(console.log('Error'))
+        .finally(() => console.log('Make a second request'));
+    }
 }
 
 // Створення та рендер розмітки
@@ -90,7 +93,7 @@ function createGallery(hits) {
 // Завантажити ще (ф-я)
 
 function onLoadMore () {
-    if (page > totalPages) {
+    if (page >= totalPages) {
         loadMoreBtn.classList.add('is-hidden');
         Notify.info("We're sorry, but you've reached the end of search results.");
     }
@@ -116,10 +119,7 @@ function incrementPage () {
 function reserPage () {
     page = 1;
     totalPages = null;
-}
-
-function onFetchError (error) {
-    Notify.failure('Oops, error!!!');
+    loadMoreBtn.classList.add('is-hidden');
 }
 
 // Бібліотека SimpleLightbox
@@ -128,7 +128,8 @@ const gallery = new SimpleLightbox('.gallery a', {});
 
 function getResponse(hits) {
     createGallery(hits);
-  gallery.refresh();
+    gallery.refresh();
+    
 }
 
 
